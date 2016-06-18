@@ -1,6 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 
+using VkNet;
 using VkNet.Model;
 
 namespace VkCli {
@@ -94,6 +97,19 @@ namespace VkCli {
             Console.ResetColor();
         }
 
+        public static void PresentMyMessage(Message msg) {
+            string date = MiscUtils.FormatDate(msg.Date);
+            string body = msg.Body;
+
+            Console.Write(date);
+            Console.WriteLine();
+
+            Console.Write("> ");
+            Console.ForegroundColor = ConsoleColor.DarkGreen;
+            Console.WriteLine(body);
+            Console.ResetColor();
+        }
+
         public static string ReadString(string msg) {
             if (msg != null)
                 Console.Write(msg);
@@ -149,6 +165,66 @@ namespace VkCli {
                     pass += key.KeyChar;
                     Console.Write("*");
                 }
+            }
+        }
+
+        public static void WriteColor(string msg, ConsoleColor? color) {
+            if (color.HasValue)
+                Console.ForegroundColor = color.Value;
+
+            Console.Write(msg);
+
+            if (color.HasValue)
+                Console.ResetColor();
+        }
+
+        public static void WriteLineColor(string msg, ConsoleColor? color) {
+            WriteColor(msg, color);
+            Console.WriteLine();
+        }
+
+        public static void LaunchChatMode(VkApi vk, AppData appData, long id) {
+            Console.WriteLine();
+            WriteLineColor("***", ConsoleColor.White);
+
+            for (;;) {
+                Thread.Sleep(500);
+
+                if (Console.KeyAvailable) {
+                    var key = Console.ReadKey(true);
+                    if (key.Key == ConsoleKey.Enter) {
+                        Console.WriteLine();
+
+                        Console.Write("> ");
+                        Console.ForegroundColor = ConsoleColor.DarkGreen;
+                        string text = Console.ReadLine();
+                        Console.ResetColor();
+
+                        if (!String.IsNullOrWhiteSpace(text)) {
+                            MiscUtils.Send(vk, id, text);
+                        } else {
+                            Console.WriteLine("(aborted)");
+                        }
+
+                        Console.WriteLine();
+                        WriteLineColor("***", ConsoleColor.White);
+                    } else if (key.Key == ConsoleKey.Escape) {
+                        return;
+                    }
+                }
+
+                var msgs = MiscUtils.RecvMessages(vk, id, null, false, false);
+
+                if (msgs.Count == 0)
+                    continue;
+
+                foreach (var m in msgs) {
+                    Console.WriteLine();
+                    CliUtils.PresentMessage(m, appData);
+                }
+
+                Console.WriteLine();
+                WriteLineColor("***", ConsoleColor.White);
             }
         }
     }

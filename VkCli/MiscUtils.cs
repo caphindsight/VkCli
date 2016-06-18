@@ -1,7 +1,15 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
+using System.Threading;
+
+using VkNet;
+using VkNet.Enums;
+using VkNet.Model;
+using VkNet.Model.RequestParams;
 
 namespace VkCli {
     public static class MiscUtils {
@@ -91,6 +99,92 @@ namespace VkCli {
             string strD = $"{date.Day}.{date.Month}.{date.Year}";
             string strT = $"{date.Hour}:{date.Minute}:{date.Second}";
             return FormatDate(strD, '.') + " " + FormatDate(strT, ':');
+        }
+
+        public static List<Message> RecvMessages(VkApi vk, long id, int? allOrSome, bool reverse, bool quiet) {
+            bool all = allOrSome.HasValue;
+            int n = allOrSome.GetValueOrDefault(200);
+
+            var raw = vk.Messages.Get(new MessagesGetParams() {
+                Count = 200,
+                Out = MessageType.Received
+            });
+
+            var msgs = new List<Message>();
+
+            bool hasUnread = false;
+
+            foreach (var m in raw.Messages) {
+                if (m.UserId != id)
+                    continue;
+
+                if (m.IsDeleted.HasValue && m.IsDeleted.Value)
+                    continue;
+
+                bool unread = m.ReadState == MessageReadState.Unreaded;
+
+                if (unread)
+                    hasUnread = true;
+
+                if (!unread && !all)
+                    continue;
+
+                msgs.Add(m);
+            }
+
+            if (all) {
+                Thread.Sleep(400);
+
+                raw = vk.Messages.Get(new MessagesGetParams() {
+                    Count = 200,
+                    Out = MessageType.Sended
+                });
+
+                foreach (var m in raw.Messages) {
+                    if (m.UserId != id)
+                        continue;
+
+                    if (m.IsDeleted.HasValue && m.IsDeleted.Value)
+                        continue;
+
+                    msgs.Add(m);
+                }
+            }
+
+            msgs.Sort((a, b) => {
+                if (!a.Date.HasValue || !b.Date.HasValue) {
+                    if (a.Date.HasValue && !b.Date.HasValue)
+                        return 1;
+                    else if (!a.Date.HasValue && b.Date.HasValue)
+                        return -1;
+                    else
+                        return 0;
+                } else {
+                    return -DateTime.Compare(a.Date.Value, b.Date.Value);
+                }
+            });
+
+            if (msgs.Count > (int)n) {
+                msgs.RemoveRange((int)n, msgs.Count - (int)n);
+            }
+
+            if (!reverse) {
+                msgs.Reverse();
+            }
+
+            if (!quiet && hasUnread) {
+                Thread.Sleep(400);
+                vk.Messages.MarkAsRead(from m in msgs where m.Id.HasValue select m.Id.Value, id.ToString(), null);
+            }
+
+            return msgs;
+        }
+
+        public static void Send(VkApi vk, long id, string text) {
+            vk.Messages.Send(new MessagesSendParams() {
+                UserId = id,
+                Message = text,
+            });
         }
     }
 }

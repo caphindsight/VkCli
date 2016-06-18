@@ -353,40 +353,7 @@ namespace VkCli {
             var vk = new VkApi();
             vk.Authorize(appData.AccessToken);
 
-            var raw = vk.Messages.Get(new MessagesGetParams() {
-                Count = 200,
-                Out = MessageType.Received
-            });
-
-            var msgs = new List<Message>();
-
-            bool hasUnread = false;
-
-            foreach (var m in raw.Messages) {
-                if (m.UserId != id)
-                    continue;
-
-                if (m.IsDeleted.HasValue && m.IsDeleted.Value)
-                    continue;
-
-                bool unread = m.ReadState == MessageReadState.Unreaded;
-
-                if (unread)
-                    hasUnread = true;
-
-                if (!unread && !all)
-                    continue;
-
-                msgs.Add(m);
-            }
-
-            if (msgs.Count > (int)n) {
-                msgs.RemoveRange((int)n, msgs.Count - (int)n);
-            }
-
-            if (!reverse) {
-                msgs.Reverse();
-            }
+            var msgs = MiscUtils.RecvMessages(vk, id, all ? (int?)n : null, reverse, quiet);
 
             if (msgs.Count > 0) {
                 CliUtils.PresentField("Messages", msgs.Count, ConsoleColor.Magenta);
@@ -394,13 +361,12 @@ namespace VkCli {
 
                 foreach (var m in msgs) {
                     Console.WriteLine();
-                    CliUtils.PresentMessage(m, appData);
+                    if (m.Type == MessageType.Received) {
+                        CliUtils.PresentMessage(m, appData);
+                    } else {
+                        CliUtils.PresentMyMessage(m);
+                    }
                 }
-            }
-
-            if (!quiet && hasUnread) {
-                Thread.Sleep(400);
-                vk.Messages.MarkAsRead(from m in msgs where m.Id.HasValue select m.Id.Value, id.ToString(), null);
             }
         }
 
@@ -418,10 +384,13 @@ namespace VkCli {
             string text = String.Join(" ", from i in Enumerable.Range(2, opts.Length - 2) select opts[i]);
 
             if (edit) {
-                CliUtils.Validate(text == null, AppError.ErrorCode.ArgumentParseError,
+                CliUtils.Validate(String.IsNullOrWhiteSpace(text), AppError.ErrorCode.ArgumentParseError,
                     "both -e|--edit mode and message body arguments are present");
 
-                text = CliUtils.ReadText(ConsoleColor.Magenta);
+                text = CliUtils.ReadText(ConsoleColor.DarkGreen);
+
+                CliUtils.Validate(!String.IsNullOrWhiteSpace(text), AppError.ErrorCode.ArgumentParseError,
+                    $"empty message");
             } else {
                 CliUtils.Validate(!String.IsNullOrWhiteSpace(text), AppError.ErrorCode.ArgumentParseError,
                     "no message body is passed and -e|--edit mode is not enabled");
@@ -430,10 +399,42 @@ namespace VkCli {
             var vk = new VkApi();
             vk.Authorize(appData.AccessToken);
 
-            vk.Messages.Send(new MessagesSendParams() {
-                UserId = id,
-                Message = text,
-            });
+            MiscUtils.Send(vk, id, text);
+        }
+
+        [CliMethod("chat")]
+        [CliMethodDescription("enter chat mode")]
+        [CliMethodRequiresAuthorization]
+        public static void Chat(string[] args, AppData appData) {
+            int p = 0;
+
+            string[] opts = new OptionSet() {
+                { "p=|prev=", _ => p = Convert.ToInt32(_) }
+            }.Parse(args).ToArray();
+
+            long id = appData.GetId(opts.GetArg(1));
+
+            var vk = new VkApi();
+            vk.Authorize(appData.AccessToken);
+
+            var msgs = MiscUtils.RecvMessages(vk, id, p != 0 ? p : 1, false, false);
+
+            Console.WriteLine("Entering chat mode. Press enter at any time to begin typing.");
+            Console.WriteLine();
+
+            CliUtils.PresentField("Buddy", appData.GetAbbr(id));
+
+            if (p != 0) {
+                foreach (var m in msgs) {
+                    Console.WriteLine();
+                    CliUtils.PresentMessage(m, appData);
+                }
+            }
+
+            CliUtils.LaunchChatMode(vk, appData, id);
+
+            Console.WriteLine();
+            Console.WriteLine("End of chat.");
         }
     }
 }
