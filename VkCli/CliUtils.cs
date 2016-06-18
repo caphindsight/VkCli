@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Text;
+
+using VkNet.Model;
 
 namespace VkCli {
     public sealed class AppError: Exception {
@@ -59,7 +62,7 @@ namespace VkCli {
                 throw new AppError(code, message);
         }
 
-        public static void PresentField(string field, string value, ConsoleColor? color = null) {
+        public static void PresentField(string field, object value, ConsoleColor? color = null) {
             Console.Write($"{field}: ");
 
             if (color.HasValue)
@@ -74,11 +77,49 @@ namespace VkCli {
             Console.WriteLine();
         }
 
+        public static void PresentMessage(Message msg, AppData appData) {
+            string abbr = appData.GetAbbr(msg.UserId.GetValueOrDefault(0));
+            string date = MiscUtils.FormatDate(msg.Date);
+            string body = msg.Body;
+
+            Console.Write(date);
+            Console.Write("  ");
+
+            Console.Write(abbr);
+
+            Console.WriteLine();
+
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.WriteLine(body);
+            Console.ResetColor();
+        }
+
         public static string ReadString(string msg) {
             if (msg != null)
                 Console.Write(msg);
 
             return Console.ReadLine();
+        }
+
+        public static string ReadText(ConsoleColor? color = null) {
+            var text = new StringBuilder();
+
+            for (;;) {
+                Console.Write("> ");
+
+                if (color.HasValue)
+                    Console.ForegroundColor = color.Value;
+
+                string line = Console.ReadLine();
+
+                if (color.HasValue)
+                    Console.ResetColor();
+
+                if (line != "")
+                    text.AppendLine(line);
+                else
+                    return text.ToString();
+            }
         }
 
         public static string ReadPassword(string msg) {

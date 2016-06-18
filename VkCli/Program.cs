@@ -1,4 +1,6 @@
-﻿using System;
+﻿#define NOCATCH
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -10,25 +12,27 @@ namespace VkCli {
         public static void Main(string[] args) {
             bool debug = false;
 
+            #if !NOCATCH
             try {
-                new OptionSet() {
-                    { "d|debug", _ => debug = true }
-                }.Parse(args);
-                Run(args);
+            #endif
+
+            new OptionSet() {
+                { "debug", _ => debug = true }
+            }.Parse(args);
+            Run(args);
+
+            #if !NOCATCH
             } catch (AppError e) {
                 e.Report(debug);
                 e.Fail();
             } catch (Exception e) {
-                #if DEBUG
-                    throw;
-                #else
-                    var err = new AppError(AppError.ErrorCode.UnknownError, e.Message);
-                    err.Report();
-                    if (debug)
-                        Console.WriteLine(e.StackTrace);
-                    err.Fail();
-                #endif
+                var err = new AppError(AppError.ErrorCode.UnknownError, e.Message);
+                err.Report();
+                if (debug)
+                    Console.WriteLine(e.StackTrace);
+                err.Fail();
             }
+            #endif
         }
 
         public static void Run(string[] args) {
