@@ -102,6 +102,9 @@ namespace VkCli {
         }
 
         public static List<Message> RecvMessages(VkApi vk, long id, int? allOrSome, bool reverse, bool quiet) {
+            if (allOrSome == 0)
+                return new List<Message>();
+
             bool all = allOrSome.HasValue;
             int n = allOrSome.GetValueOrDefault(200);
 

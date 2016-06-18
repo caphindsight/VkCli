@@ -9,15 +9,22 @@ namespace VkCli {
     public static class Program {
         public static void Main(string[] args) {
             bool debug = false;
+            bool help = false;
 
             #if !NOCATCH
             try {
             #endif
 
             new OptionSet() {
-                { "debug", _ => debug = true }
+                { "debug", _ => debug = true },
+                { "?|help", _ => help = true },
             }.Parse(args);
-            Run(args);
+
+            if (!help) {
+                Run(args);
+            } else {
+                ShowHelp();
+            }
 
             #if !NOCATCH
             } catch (AppError e) {
@@ -60,6 +67,43 @@ namespace VkCli {
             Action<string[], AppData> action = (Action<string[], AppData>)Delegate.CreateDelegate(
                 typeof(Action<string[], AppData>), method);
             action(args, appData);
+        }
+
+        public static void ShowHelp() {
+            Console.WriteLine("VkCli - a command-line VK client.");
+            Console.WriteLine("Usage: vk <subcommand> <options>");
+
+            MethodInfo[] methods = typeof(Methods).GetMethods();
+            foreach (MethodInfo m in methods) {
+                if (m.GetCustomAttribute<CliMethodAttribute>() == null)
+                    continue;
+
+                Console.WriteLine();
+
+                string subcommand = String.Join("/", m.GetCustomAttribute<CliMethodAttribute>().Names);
+
+                string args = "";
+                if (m.GetCustomAttribute<CliMethodParamsAttribute>() != null) {
+                    args = String.Join(" ", m.GetCustomAttribute<CliMethodParamsAttribute>().Params);
+                }
+
+                string flags = "";
+                foreach (var flagAttr in m.GetCustomAttributes<CliMethodFlagAttribute>()) {
+                    flags += $" [{flagAttr.Flag}]";
+                }
+
+                Console.WriteLine($"vk {subcommand} {args} {flags}");
+                if (m.GetCustomAttribute<CliMethodDescriptionAttribute>() != null) {
+                    Console.WriteLine("    " + m.GetCustomAttribute<CliMethodDescriptionAttribute>().Description);
+                }
+
+                foreach (var flagAttr in m.GetCustomAttributes<CliMethodFlagAttribute>()) {
+                    Console.WriteLine($"    {flagAttr.Flag} - {flagAttr.Description}");
+                }
+            }
+
+            Console.WriteLine();
+            Console.WriteLine("Copyright (C) 2016 hindsight <hindsight@yandex.ru>.");
         }
     }
 }

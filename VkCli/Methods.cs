@@ -124,6 +124,7 @@ namespace VkCli {
 
         [CliMethod("status=")]
         [CliMethodDescription("set user status")]
+        [CliMethodParams("new_status")]
         [CliMethodRequiresAuthorization]
         public static void SetStatus(string[] args, AppData appData) {
             string[] opts = new OptionSet().Parse(args).ToArray();
@@ -137,7 +138,8 @@ namespace VkCli {
         }
 
         [CliMethod("friend")]
-        [CliMethodDescription("get person info")]
+        [CliMethodDescription("get person's info")]
+        [CliMethodParams("id_or_abbr")]
         [CliMethodRequiresAuthorization]
         public static void Friend(string[] args, AppData appData) {
             string[] opts = new OptionSet().Parse(args).ToArray();
@@ -175,6 +177,9 @@ namespace VkCli {
 
         [CliMethod("friends")]
         [CliMethodDescription("get user friends list")]
+        [CliMethodFlag("-i, --ids", "show only ids")]
+        [CliMethodFlag("-o, --online", "show only online users")]
+        [CliMethodFlag("-s, --sort", "sort users alphabetically")]
         [CliMethodRequiresAuthorization]
         public static void Friends(string[] args, AppData appData) {
             bool onlyOnline = false;
@@ -250,6 +255,8 @@ namespace VkCli {
         }
 
         [CliMethod("abbr", "abbreviate")]
+        [CliMethodParams("abbr", "id")]
+        [CliMethodFlag("-d, --delete", "delete abbreviation")]
         [CliMethodDescription("handles abbreviations")]
         public static void Abbr(string[] args, AppData appData) {
             bool delete = false;
@@ -298,10 +305,10 @@ namespace VkCli {
             table.Display();
         }
 
-        [CliMethod("sup", "whatsup", "check")]
+        [CliMethod("check")]
         [CliMethodDescription("shows pending dialogs")]
         [CliMethodRequiresAuthorization]
-        public static void Whatsup(string[] args, AppData appData) {
+        public static void Check(string[] args, AppData appData) {
             var vk = new VkApi();
             vk.Authorize(appData.AccessToken);
 
@@ -335,6 +342,10 @@ namespace VkCli {
 
         [CliMethod("recv", "receive")]
         [CliMethodDescription("receives the conversation")]
+        [CliMethodParams("id_or_abbr")]
+        [CliMethodFlag("-q, --quiet", "do not mark received messages as read")]
+        [CliMethodFlag("-a=.., --all=..", "receive n messages instead of all of unread messages")]
+        [CliMethodFlag("-r, --reverse", "reverse the order of displayed messages")]
         [CliMethodRequiresAuthorization]
         public static void Recv(string[] args, AppData appData) {
             bool quiet = false;
@@ -372,6 +383,8 @@ namespace VkCli {
 
         [CliMethod("send")]
         [CliMethodDescription("sends messages")]
+        [CliMethodParams("id_or_abbr", "text")]
+        [CliMethodFlag("-e, --edit", "enter message interactively")]
         [CliMethodRequiresAuthorization]
         public static void Send(string[] args, AppData appData) {
             bool edit = false;
@@ -404,6 +417,8 @@ namespace VkCli {
 
         [CliMethod("chat")]
         [CliMethodDescription("enter chat mode")]
+        [CliMethodParams("id_or_abbr")]
+        [CliMethodFlag("-p=.., --prev=..", "show n previous messages")]
         [CliMethodRequiresAuthorization]
         public static void Chat(string[] args, AppData appData) {
             int p = 0;
@@ -417,17 +432,19 @@ namespace VkCli {
             var vk = new VkApi();
             vk.Authorize(appData.AccessToken);
 
-            var msgs = MiscUtils.RecvMessages(vk, id, p != 0 ? p : 1, false, false);
+            var msgs = MiscUtils.RecvMessages(vk, id, p, false, false);
 
             Console.WriteLine("Entering chat mode. Press enter at any time to begin typing.");
-            Console.WriteLine();
-
             CliUtils.PresentField("Buddy", appData.GetAbbr(id));
 
             if (p != 0) {
                 foreach (var m in msgs) {
                     Console.WriteLine();
-                    CliUtils.PresentMessage(m, appData);
+
+                    if (m.Type == MessageType.Received)
+                        CliUtils.PresentMessage(m, appData);
+                    else
+                        CliUtils.PresentMyMessage(m);
                 }
             }
 

@@ -187,6 +187,8 @@ namespace VkCli {
             Console.WriteLine();
             WriteLineColor("***", ConsoleColor.White);
 
+            int failed = 0;
+
             for (;;) {
                 Thread.Sleep(500);
 
@@ -213,18 +215,26 @@ namespace VkCli {
                     }
                 }
 
-                var msgs = MiscUtils.RecvMessages(vk, id, null, false, false);
+                try {
+                    var msgs = MiscUtils.RecvMessages(vk, id, null, false, false);
 
-                if (msgs.Count == 0)
-                    continue;
+                    if (msgs.Count == 0)
+                        continue;
 
-                foreach (var m in msgs) {
+                    foreach (var m in msgs) {
+                        Console.WriteLine();
+                        CliUtils.PresentMessage(m, appData);
+                    }
+
                     Console.WriteLine();
-                    CliUtils.PresentMessage(m, appData);
-                }
+                    WriteLineColor("***", ConsoleColor.White);
 
-                Console.WriteLine();
-                WriteLineColor("***", ConsoleColor.White);
+                    failed = 0;
+                } catch {
+                    failed++;
+                    if (failed > 10)
+                        throw;
+                }
             }
         }
     }
