@@ -229,6 +229,12 @@ namespace VkCli {
                 try {
                     var msgs = MiscUtils.RecvMessages(vk, id, null, false, false);
 
+                    foreach (string body in outgoing) {
+                        MiscUtils.Send(vk, id, body, room);
+                    }
+
+                    outgoing.Clear();
+
                     if (msgs.Count == 0)
                         continue;
 
@@ -236,12 +242,6 @@ namespace VkCli {
                         Console.WriteLine();
                         CliUtils.PresentMessage(m, appData);
                     }
-
-                    foreach (string body in outgoing) {
-                        MiscUtils.Send(vk, id, body, room);
-                    }
-
-                    outgoing.Clear();
 
                     Console.WriteLine();
                     WriteLineColor("***", ConsoleColor.White);
