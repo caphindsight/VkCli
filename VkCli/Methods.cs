@@ -453,5 +453,39 @@ namespace VkCli {
             Console.WriteLine();
             Console.WriteLine("End of chat.");
         }
+
+        [CliMethod("important")]
+        [CliMethodDescription("retrieve important messages")]
+        [CliMethodFlag("-n=..", "show n last messages")]
+        [CliMethodRequiresAuthorization]
+        public static void Important(string[] args, AppData appData) {
+            uint n = 0;
+
+            new OptionSet() {
+                { "n=", _ => n = Convert.ToUInt32(_) }
+            }.Parse(args);
+
+            CliUtils.Validate(n > 0, AppError.ErrorCode.ArgumentParseError,
+                $"should pass the number of messages to retrieve (-n=..)");
+
+            var vk = new VkApi();
+            vk.Authorize(appData.AccessToken);
+
+            var messages = vk.Messages.Get(new MessagesGetParams() {
+                Count = n,
+                Filters = MessagesFilter.Important,
+            }).Messages;
+
+            CliUtils.PresentField("Messages", messages.Count);
+
+            foreach (var m in messages) {
+                Console.WriteLine();
+
+                if (m.Type == MessageType.Received)
+                    CliUtils.PresentMessage(m, appData);
+                else
+                    CliUtils.PresentMyMessage(m);
+            }
+        }
     }
 }
