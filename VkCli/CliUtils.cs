@@ -196,6 +196,8 @@ namespace VkCli {
 
             int failed = 0;
 
+            var outgoing = new List<string>();
+
             for (;;) {
                 Thread.Sleep(500);
 
@@ -210,7 +212,7 @@ namespace VkCli {
                         Console.ResetColor();
 
                         if (!String.IsNullOrWhiteSpace(text)) {
-                            MiscUtils.Send(vk, id, text, room);
+                            outgoing.Add(text);
                         } else {
                             Console.WriteLine("(aborted)");
                         }
@@ -234,6 +236,12 @@ namespace VkCli {
                         Console.WriteLine();
                         CliUtils.PresentMessage(m, appData);
                     }
+
+                    foreach (string body in outgoing) {
+                        MiscUtils.Send(vk, id, body, room);
+                    }
+
+                    outgoing.Clear();
 
                     Console.WriteLine();
                     WriteLineColor("***", ConsoleColor.White);
