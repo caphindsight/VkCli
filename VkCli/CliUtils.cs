@@ -4,6 +4,7 @@ using System.Text;
 using System.Threading;
 
 using VkNet;
+using VkNet.Enums;
 using VkNet.Model;
 
 namespace VkCli {
@@ -81,33 +82,39 @@ namespace VkCli {
         }
 
         public static void PresentMessage(Message msg, AppData appData) {
-            string abbr = appData.GetAbbr(msg.UserId.GetValueOrDefault(0));
+            if (msg.ChatId.HasValue) {
+                PresentField("Room", appData.GetAbbr(msg.ChatId.Value));
+            }
+
+            string abbr = appData.GetAbbr(msg.UserId ?? 0);
             string date = MiscUtils.FormatDate(msg.Date);
-            string body = msg.Body;
+            string body = msg.Body ?? "";
 
-            Console.Write(date);
-            Console.Write("  ");
-
-            Console.Write(abbr);
-
-            Console.WriteLine();
-
-            Console.ForegroundColor = ConsoleColor.Cyan;
-            Console.WriteLine(body);
-            Console.ResetColor();
+            if (msg.Type == MessageType.Sended) {
+                Console.WriteLine(date);
+                Console.Write("> ");
+                WriteLineColor(body, ConsoleColor.DarkGreen);
+            } else {
+                Console.WriteLine($"{date}  {abbr}");
+                WriteLineColor(body, ConsoleColor.Cyan);
+            }
         }
 
-        public static void PresentMyMessage(Message msg) {
+        public static void PresentDialog(Message msg, AppData appData) {
+            string room = msg.ChatId.HasValue ? appData.GetAbbr(msg.ChatId.Value) : null;
+            string abbr = appData.GetAbbr(msg.UserId ?? 0);
             string date = MiscUtils.FormatDate(msg.Date);
-            string body = msg.Body;
+            string body = msg.Body ?? "";
 
-            Console.Write(date);
-            Console.WriteLine();
+            if (room != null) {
+                PresentField("Room", room, ConsoleColor.Yellow);
+                PresentField("Last message", $"{date}, by {abbr}");
+            } else {
+                PresentField("Buddy", abbr, ConsoleColor.Yellow);
+                PresentField("Last message", date);
+            }
 
-            Console.Write("> ");
-            Console.ForegroundColor = ConsoleColor.DarkGreen;
             Console.WriteLine(body);
-            Console.ResetColor();
         }
 
         public static string ReadString(string msg) {
@@ -183,7 +190,7 @@ namespace VkCli {
             Console.WriteLine();
         }
 
-        public static void LaunchChatMode(VkApi vk, AppData appData, long id) {
+        public static void LaunchChatMode(VkApi vk, AppData appData, long id, bool room) {
             Console.WriteLine();
             WriteLineColor("***", ConsoleColor.White);
 
@@ -203,7 +210,7 @@ namespace VkCli {
                         Console.ResetColor();
 
                         if (!String.IsNullOrWhiteSpace(text)) {
-                            MiscUtils.Send(vk, id, text);
+                            MiscUtils.Send(vk, id, text, room);
                         } else {
                             Console.WriteLine("(aborted)");
                         }

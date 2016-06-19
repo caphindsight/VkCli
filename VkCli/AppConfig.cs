@@ -54,21 +54,26 @@ namespace VkCli {
         private Dictionary<long, string> IdToAbbr_
             = new Dictionary<long, string>();
 
-        public void AddAbbr(string abbr, long id) {
+        private HashSet<string> AbbrRooms_
+            = new HashSet<string>();
+
+        public void AddAbbr(string abbr, long id, bool room = false) {
             if (AbbrToId_.ContainsKey(abbr)) {
                 throw new AppError(AppError.ErrorCode.ApplicationConfigError,
                     $"abbreviation '{abbr}' already present, corresponding to id {AbbrToId_[abbr]}");
-                
             }
 
             if (IdToAbbr_.ContainsKey(id)) {
                 throw new AppError(AppError.ErrorCode.ApplicationConfigError,
                     $"id {id} already present, corresponding to abbreviation '{IdToAbbr_[id]}'");
-                
             }
 
             AbbrToId_.Add(abbr, id);
             IdToAbbr_.Add(id, abbr);
+
+            if (room) {
+                AbbrRooms_.Add(abbr);
+            }
         }
 
         public void DeleteAbbr(string abbr) {
@@ -81,6 +86,10 @@ namespace VkCli {
 
             AbbrToId_.Remove(abbr);
             IdToAbbr_.Remove(id);
+
+            if (AbbrRooms_.Contains(abbr)) {
+                AbbrRooms_.Remove(abbr);
+            }
         }
 
 
@@ -96,6 +105,14 @@ namespace VkCli {
                 } catch {
                     throw new AppError(AppError.ErrorCode.ArgumentParseError, $"unknown abbr or id: '{str}'");
                 }
+            }
+        }
+
+        public bool? IsRoom(string abbr) {
+            if (AbbrToId_.ContainsKey(abbr)) {
+                return AbbrRooms_.Contains(abbr);
+            } else {
+                return null;
             }
         }
 

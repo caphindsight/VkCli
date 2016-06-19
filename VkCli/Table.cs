@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -24,7 +25,7 @@ namespace VkCli {
             });
         }
 
-        public void Display() {
+        public void Display(TextWriter w) {
             if (Data_.Count == 0)
                 return;
 
@@ -48,12 +49,18 @@ namespace VkCli {
             foreach (string[] r in Data_) {
                 for (int i = 0; i < r.Length; i++) {
                     if (i != 0)
-                        Console.Write("  ");
+                        w.Write("  ");
 
-                    Console.Write(MiscUtils.FitString(r[i], sz[i]));
+                    w.Write(MiscUtils.FitString(r[i], sz[i]));
                 }
-                Console.WriteLine();
+                w.WriteLine();
             }
+
+            w.Flush();
+        }
+
+        public void Display() {
+            Display(Console.Out);
         }
     }
 }

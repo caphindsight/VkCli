@@ -102,11 +102,10 @@ namespace VkCli {
         }
 
         public static List<Message> RecvMessages(VkApi vk, long id, int? allOrSome, bool reverse, bool quiet) {
-            if (allOrSome == 0)
-                return new List<Message>();
-
             bool all = allOrSome.HasValue;
             int n = allOrSome.GetValueOrDefault(200);
+
+            bool room = false;
 
             var raw = vk.Messages.Get(new MessagesGetParams() {
                 Count = 200,
@@ -118,8 +117,14 @@ namespace VkCli {
             bool hasUnread = false;
 
             foreach (var m in raw.Messages) {
-                if (m.UserId != id)
+                if (m.UserId != id && m.ChatId != id)
                     continue;
+
+                if (m.UserId == id && m.ChatId != null)
+                    continue;
+
+                if (m.ChatId == id)
+                    room = true;
 
                 if (m.IsDeleted.HasValue && m.IsDeleted.Value)
                     continue;
@@ -144,8 +149,14 @@ namespace VkCli {
                 });
 
                 foreach (var m in raw.Messages) {
-                    if (m.UserId != id)
+                    if (m.UserId != id && m.ChatId != id)
                         continue;
+
+                    if (m.UserId == id && m.ChatId != null)
+                        continue;
+
+                    if (m.ChatId == id)
+                        room = true;
 
                     if (m.IsDeleted.HasValue && m.IsDeleted.Value)
                         continue;
@@ -177,15 +188,16 @@ namespace VkCli {
 
             if (!quiet && hasUnread) {
                 Thread.Sleep(400);
-                vk.Messages.MarkAsRead(from m in msgs where m.Id.HasValue select m.Id.Value, id.ToString(), null);
+                vk.Messages.MarkAsRead(from m in msgs where m.Id.HasValue select m.Id.Value, ((room ? 2000000000L : 0) + id).ToString(), null);
             }
 
             return msgs;
         }
 
-        public static void Send(VkApi vk, long id, string text) {
+        public static void Send(VkApi vk, long id, string text, bool room = false) {
             vk.Messages.Send(new MessagesSendParams() {
-                UserId = id,
+                UserId = room ? null : (long?) id,
+                ChatId = room ? (long?)  id : null,
                 Message = text,
             });
         }
