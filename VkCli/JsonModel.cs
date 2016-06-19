@@ -46,6 +46,9 @@ namespace VkCli {
 
         public string user_id { get; set; }
             = null;
+
+        public string email { get; set; }
+            = null;
     }
 }
 

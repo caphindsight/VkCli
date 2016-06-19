@@ -199,7 +199,7 @@ namespace VkCli {
             for (;;) {
                 Thread.Sleep(500);
 
-                if (Console.KeyAvailable) {
+                while (Console.KeyAvailable) {
                     var key = Console.ReadKey(true);
                     if (key.Key == ConsoleKey.Enter) {
                         Console.WriteLine();
@@ -217,6 +217,8 @@ namespace VkCli {
 
                         Console.WriteLine();
                         WriteLineColor("***", ConsoleColor.White);
+
+                        break;
                     } else if (key.Key == ConsoleKey.Escape) {
                         return;
                     }

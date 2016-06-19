@@ -26,10 +26,20 @@ namespace VkCli {
 
         [CliMethod("st", "state")]
         [CliMethodDescription("displays the current session state")]
+        [CliMethodFlag("access-token", "displays the access token")]
         public static void State(string[] args, AppData appData) {
+            bool accessToken = false;
+            new OptionSet() {
+                { "access-token", _ => accessToken = true },
+            }.Parse(args);
+
             CliUtils.PresentField("State",
                 appData.Authorized ? "authorized" : "not authorized",
                 appData.Authorized ? ConsoleColor.DarkGreen : ConsoleColor.DarkRed);
+
+            if (accessToken) {
+                CliUtils.PresentField("Access token", appData.AccessToken);
+            }
 
             CliUtils.PresentField("User name", appData.FullName);
         }
