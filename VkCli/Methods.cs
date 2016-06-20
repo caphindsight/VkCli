@@ -494,8 +494,10 @@ namespace VkCli {
 
             long id = appData.GetId(opts.GetArg(1));
 
-            if (appData.IsRoom(opts.GetArg(1)) == true && !room) {
-                throw new AppError(AppError.ErrorCode.ArgumentParseError, $"abbr '{appData.GetAbbr(id)}' is mentioned as a room, but no -R|--room given");
+            bool? roomAbbr = appData.IsRoom(opts.GetArg(1));
+            if (roomAbbr.HasValue && roomAbbr.Value != room) {
+                Console.WriteLine($"Warning: setting -R|--room flag to {roomAbbr.Value} according to abbreviations data.");
+                room = roomAbbr.Value;
             }
 
             var vk = new VkApi();
@@ -531,8 +533,10 @@ namespace VkCli {
 
             long id = appData.GetId(opts.GetArg(1));
 
-            if (appData.IsRoom(opts.GetArg(1)) == true && !room) {
-                throw new AppError(AppError.ErrorCode.ArgumentParseError, $"abbr '{appData.GetAbbr(id)}' is mentioned as a room, but no -R|--room given");
+            bool? roomAbbr = appData.IsRoom(opts.GetArg(1));
+            if (roomAbbr.HasValue && roomAbbr.Value != room) {
+                Console.WriteLine($"Warning: setting -R|--room flag to {roomAbbr.Value} according to abbreviations data.");
+                room = roomAbbr.Value;
             }
 
             string text = String.Join(" ", from i in Enumerable.Range(2, opts.Length - 2) select opts[i]);
@@ -573,8 +577,10 @@ namespace VkCli {
 
             long id = appData.GetId(opts.GetArg(1));
 
-            if (appData.IsRoom(opts.GetArg(1)) == true && !room) {
-                throw new AppError(AppError.ErrorCode.ArgumentParseError, $"abbr '{appData.GetAbbr(id)}' is mentioned as a room, but no -R|--room given");
+            bool? roomAbbr = appData.IsRoom(opts.GetArg(1));
+            if (roomAbbr.HasValue && roomAbbr.Value != room) {
+                Console.WriteLine($"Warning: setting -R|--room flag to {roomAbbr.Value} according to abbreviations data.");
+                room = roomAbbr.Value;
             }
 
             var vk = new VkApi();
