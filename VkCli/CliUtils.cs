@@ -138,10 +138,13 @@ namespace VkCli {
                 if (color.HasValue)
                     Console.ResetColor();
 
-                if (line != "")
+                if (line.EndsWith(@"\")) {
+                    line = line.Substring(0, line.Length - 1);
                     text.AppendLine(line);
-                else
+                } else {
+                    text.AppendLine(line);
                     return text.ToString();
+                }
             }
         }
 
@@ -205,11 +208,7 @@ namespace VkCli {
                     var key = Console.ReadKey(true);
                     if (key.Key == ConsoleKey.Enter) {
                         Console.WriteLine();
-
-                        Console.Write("> ");
-                        Console.ForegroundColor = ConsoleColor.DarkGreen;
-                        string text = Console.ReadLine();
-                        Console.ResetColor();
+                        string text = ReadText(ConsoleColor.DarkGreen);
 
                         if (!String.IsNullOrWhiteSpace(text)) {
                             outgoing.Add(text);
