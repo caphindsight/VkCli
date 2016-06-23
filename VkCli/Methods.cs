@@ -602,9 +602,6 @@ namespace VkCli {
             }
 
             CliUtils.LaunchChatMode(vk, appData, id, room);
-
-            Console.WriteLine();
-            Console.WriteLine("End of chat.");
         }
 
         [CliMethod("important")]

@@ -194,63 +194,67 @@ namespace VkCli {
         }
 
         public static void LaunchChatMode(VkApi vk, AppData appData, long id, bool room) {
-            Console.WriteLine();
-            WriteLineColor("***", ConsoleColor.White);
-
-            int failed = 0;
-
-            var outgoing = new List<string>();
-
-            for (;;) {
-                Thread.Sleep(500);
-
-                while (Console.KeyAvailable) {
-                    var key = Console.ReadKey(true);
-                    if (key.Key == ConsoleKey.Enter) {
-                        Console.WriteLine();
-                        string text = ReadText(ConsoleColor.DarkGreen);
-
-                        if (!String.IsNullOrWhiteSpace(text)) {
-                            outgoing.Add(text);
-                        } else {
-                            Console.WriteLine("(aborted)");
+            using (var ctx = new ChatContext(vk, appData, id, room)) {
+                var syncThread = new Thread(() => {
+                    try {
+                        for (;;) {
+                            lock (ctx) {
+                                try {
+                                    ctx.Sync();
+                                    ctx.ResetErrors();
+                                } catch (ThreadAbortException) {
+                                    throw;
+                                } catch {
+                                    if (!ctx.ReportError())
+                                        throw;
+                                }
+                            }
+                            Thread.Sleep(1000);
                         }
-
-                        Console.WriteLine();
-                        WriteLineColor("***", ConsoleColor.White);
-
-                        break;
-                    } else if (key.Key == ConsoleKey.Escape) {
-                        return;
+                    } catch (ThreadAbortException) {
+                        lock (ctx) {
+                            ctx.Display();
+                        }
                     }
+                });
+
+                syncThread.Start();
+
+                for (;;) {
+                    while (Console.KeyAvailable) {
+                        var key = Console.ReadKey(true);
+                        if (key.Key == ConsoleKey.Enter) {
+                            Console.WriteLine();
+                            string text = ReadText(ConsoleColor.DarkGreen);
+
+                            if (String.IsNullOrWhiteSpace(text)) {
+                                Console.WriteLine("(aborted)");
+                                ChatContext.HorizontalLine();
+                            } else {
+                                ChatContext.HorizontalLine();
+                                lock (ctx) {
+                                    ctx.AddOutgoing(text);
+                                }
+                            }
+                        } else if (key.Key == ConsoleKey.Escape) {
+                            goto abort;
+                        }
+                    }
+
+                    if (Monitor.TryEnter(ctx)) {
+                        try {
+                            ctx.Display();
+                        } finally {
+                            Monitor.Exit(ctx);
+                        }
+                    }
+
+                    Thread.Sleep(50);
                 }
 
-                try {
-                    var msgs = MiscUtils.RecvMessages(vk, id, null, false, false);
-
-                    foreach (string body in outgoing) {
-                        MiscUtils.Send(vk, id, body, room);
-                    }
-
-                    outgoing.Clear();
-
-                    if (msgs.Count == 0)
-                        continue;
-
-                    foreach (var m in msgs) {
-                        Console.WriteLine();
-                        CliUtils.PresentMessage(m, appData);
-                    }
-
-                    Console.WriteLine();
-                    WriteLineColor("***", ConsoleColor.White);
-
-                    failed = 0;
-                } catch {
-                    failed++;
-                    if (failed > 10)
-                        throw;
-                }
+                abort:
+                syncThread.Abort();
+                syncThread.Join();
             }
         }
     }

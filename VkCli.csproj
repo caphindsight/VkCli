@@ -57,6 +57,7 @@
     <Compile Include="VkCli\JsonModel.cs" />
     <Compile Include="VkCli\Meta.cs" />
     <Compile Include="VkCli\Table.cs" />
+    <Compile Include="VkCli\ChatContext.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
