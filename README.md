@@ -25,6 +25,8 @@ Use `vk abbrs` to see the list of your abbreviations.
 * Run `vk friend {id/abbr}` to see detailed information about a contact.
 * Run `vk recv {id/abbr}` to receive the unread messages from a contact.
 * Run `vk recv -q {id/abbr}` to receive the unread messages from a contact in the stealths mode (the messages will stay unread).
+* Run `vk send {id/abbr} {message}` to send the text message message to a contact. Beware spaces, use quotes!
+* Run `vk send {id/abbr} -e` to enter the text message interactively and send it to a contact.
 * Run `vk chat {id/abbr}` to enter the chat mode with a contact.
 
 ## Feedback
